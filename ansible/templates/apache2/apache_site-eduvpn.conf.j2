@@ -1,0 +1,81 @@
+<VirtualHost *:80>
+    ServerName {{ eduvpn_fqdn }}
+    UseCanonicalName on
+
+    LogLevel warn
+    ErrorLog /var/log/apache2/{{ eduvpn_fqdn }}_error.log
+    TransferLog /dev/null
+
+    # Redirect all HTTP traffic to HTTPS
+    Redirect permanent / https://{{ eduvpn_fqdn }}/
+</VirtualHost>
+
+<VirtualHost *:443>
+    ServerName {{ eduvpn_fqdn }}
+    UseCanonicalName on
+
+    LogLevel warn
+    ErrorLog /var/log/apache2/{{ eduvpn_fqdn }}_ssl_error.log
+    TransferLog /dev/null
+
+    # Let's Encrypt certificates
+    SSLCertificateFile      /etc/letsencrypt/live/{{ certbot_certs[0].domains[0] }}/cert.pem
+    SSLCertificateKeyFile   /etc/letsencrypt/live/{{ certbot_certs[0].domains[0] }}/privkey.pem
+    SSLCertificateChainFile /etc/letsencrypt/live/{{ certbot_certs[0].domains[0] }}/chain.pem
+
+    # Security headers
+    Header always set Strict-Transport-Security "max-age=15768000"
+    Header always set Permissions-Policy "interest-cohort=()"
+
+    # Redirect root to the portal
+    RewriteEngine on
+    RewriteRule "^/$" "/vpn-user-portal/" [R]
+
+{% if auth_module == 'OidcAuthModule' %}
+    # --- OpenID Connect authentication ----------------------------------------
+    OIDCProviderMetadataURL {{ oidc_provider_metadata_url }}
+    OIDCClientID            {{ oidc_client_id }}
+    OIDCClientSecret        {{ vault_oidc_clients_secret }}
+    OIDCCryptoPassphrase    {{ vault_oidc_crypto_passphrase }}
+    OIDCRedirectURI         {{ oidc_redirect_uri }}
+    OIDCRemoteUserClaim     email
+
+    <Location /vpn-user-portal>
+        AuthType openid-connect
+        Require valid-user
+    </Location>
+{% else %}
+    # --- No external SSO; portal handles auth internally ----------------------
+    <Location /vpn-user-portal>
+        Require all granted
+    </Location>
+{% endif %}
+
+    # Admin API – allow from anywhere (tighten as needed)
+    <Location /vpn-user-portal/admin/api>
+        Require all granted
+    </Location>
+
+    # VPN client API – must be open
+    <Location /vpn-user-portal/api>
+        Require all granted
+    </Location>
+
+    # OAuth token endpoint – must be open
+    <Location /vpn-user-portal/oauth/token>
+        Require all granted
+    </Location>
+
+    # Node API – allow local access; include server public address for
+    # same-host FQDN requests that do not match Require local.
+    <Location /vpn-user-portal/node-api.php>
+        <RequireAny>
+            Require local
+            Require ip {{ server_ipv4 }}/32
+{% if server_ipv6 is defined and server_ipv6|length > 0 %}
+            Require ip {{ server_ipv6 }}/128
+{% endif %}
+        </RequireAny>
+    </Location>
+
+</VirtualHost>

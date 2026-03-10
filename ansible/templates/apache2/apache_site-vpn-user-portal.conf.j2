@@ -1,0 +1,39 @@
+Define VPN_APP_ROOT /vpn-user-portal
+
+SetEnv VPN_APP_ROOT ${VPN_APP_ROOT}
+
+# Fancy URLs for OAuth / API calls
+Alias ${VPN_APP_ROOT}/oauth/authorize /usr/share/vpn-user-portal/web/index.php
+Alias ${VPN_APP_ROOT}/oauth/token     /usr/share/vpn-user-portal/web/oauth.php
+Alias ${VPN_APP_ROOT}/api             /usr/share/vpn-user-portal/web/api.php
+Alias ${VPN_APP_ROOT}/admin/api       /usr/share/vpn-user-portal/web/admin-api.php
+
+Alias ${VPN_APP_ROOT}                 /usr/share/vpn-user-portal/web
+Alias /.well-known/vpn-user-portal    /usr/share/vpn-user-portal/web/well-known.php
+
+<Directory /usr/share/vpn-user-portal/web>
+    Require all granted
+
+    RewriteEngine on
+    RewriteBase ${VPN_APP_ROOT}
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^ index.php [L,QSA]
+
+    <Files index.php>
+        Header always set Content-Security-Policy "default-src 'self'"
+        Header always set X-Frame-Options "DENY"
+        Header always set X-Content-Type-Options "nosniff"
+        Header always set X-XSS-Protection "1; mode=block"
+        Header always set Referrer-Policy "same-origin"
+    </Files>
+
+    # node-api.php is consumed by the local vpn-server-node process only
+    <Files node-api.php>
+        Require local
+    </Files>
+
+    <Files admin-api.php>
+        Require all granted
+    </Files>
+</Directory>

@@ -1,0 +1,10 @@
+# memcached – minimal single-server configuration
+# Managed by Ansible – do not edit manually.
+
+-d
+logfile /var/log/memcached.log
+-m 64
+-p 11211
+-u memcache
+-l 127.0.0.1
+-P /var/run/memcached/memcached.pid

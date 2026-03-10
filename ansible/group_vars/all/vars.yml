@@ -1,0 +1,114 @@
+---
+# =============================================================================
+#  General settings – edit these before running the playbook
+# =============================================================================
+
+# Fully qualified domain name of the VPN portal (MUST match your DNS record)
+eduvpn_fqdn: vpn.example.org
+
+# Debian/Ubuntu codename of the target server (e.g. bookworm, noble)
+debian_code_name: bookworm
+
+# Directory where the eduVPN deploy archive will be unpacked
+prj_source: /opt/eduvpn
+
+# Public network interface used for VPN traffic (e.g. eth0, ens3)
+public_interface_name: eth0
+
+# Public IPv4 address of this server
+server_ipv4: "203.0.113.10"
+
+# Public IPv6 address of this server (leave empty string to disable IPv6 rules)
+# server_ipv6: "2001:db8::1"
+
+# =============================================================================
+#  WireGuard
+# =============================================================================
+wireguard_port: 51820
+
+# =============================================================================
+#  VPN Profiles
+#
+#  For a single-server all-in-one setup node selection is implicit (single node).
+#  Add as many profiles as you need.
+# =============================================================================
+profiles:
+  - id: default
+    name: "Default"
+    hostname:
+      - "{{ eduvpn_fqdn }}"
+    default_gateway: false
+    dnsServerList: ["9.9.9.9", "149.112.112.112"]
+    dnsSearchDomainList: []
+    routelist: ["192.168.0.0/16"]
+    routelist_ipv6: []
+    aclPermissionList: null
+    preferred_proto: wg
+    oUdpPortList: [1194]
+    oTcpPortList: [1194]
+    oEnableLog: false
+    wg_range_ipv4:
+      "0": "10.43.43.0/24"
+    wg_range_ipv6:
+      "0": "fd43:4343:4343::/48"
+
+# =============================================================================
+#  Memcached
+# =============================================================================
+memcached_servers_list: '["127.0.0.1:11211"]'
+
+# =============================================================================
+#  Authentication module
+#  Uncomment ONE of the options below and fill in the matching section.
+#  Default: DbAuthModule (local username/password database – simplest)
+# =============================================================================
+auth_module: DbAuthModule
+# auth_module: OidcAuthModule
+# auth_module: LdapAuthModule
+
+# -- OpenID Connect (only used when auth_module == OidcAuthModule) -----------
+oidc_provider_metadata_url: "https://sso.example.org/auth/realms/YOUR_REALM/.well-known/openid-configuration"
+oidc_client_id: "your-client-id"
+oidc_redirect_uri: "https://{{ eduvpn_fqdn }}/vpn-user-portal/redirect_uri"
+
+# -- LDAP (only used when auth_module == LdapAuthModule) ---------------------
+ldap_uri: "ldap://ldap.example.org"
+ldap_bind_dn_template: "uid={{UID}},ou=people,dc=example,dc=org"
+
+# =============================================================================
+#  Admin users
+# =============================================================================
+admin_user_id_list:
+  - admin
+
+# =============================================================================
+#  Guest access (allow any authenticated user from any eduVPN server)
+# =============================================================================
+guest_access_enabled: "false"
+
+# =============================================================================
+#  Let's Encrypt / certbot
+# =============================================================================
+certbot_install_method: package
+certbot_create_if_missing: true
+certbot_create_method: standalone
+certbot_testmode: false
+certbot_admin_email: admin@example.org
+certbot_create_standalone_stop_services:
+  - apache2
+certbot_script: certbot
+certbot_auto_renew_user: root
+
+certbot_certs:
+  - domains:
+      - "{{ eduvpn_fqdn }}"
+
+# =============================================================================
+#  Internal portal <-> vpn-daemon transport (single-host)
+# =============================================================================
+# Official default for vpn-daemon API is 41194.
+node_slave_port: 41194
+
+# For single-host deployments keep this disabled (official recommendation).
+# Enable only when you explicitly want mTLS between portal and local daemon.
+vpn_daemon_use_tls: false

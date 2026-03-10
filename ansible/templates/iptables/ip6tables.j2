@@ -1,0 +1,41 @@
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT ACCEPT [0:0]
+
+# Allow established connections
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+
+# Allow loopback
+-A INPUT -i lo -j ACCEPT
+
+# Allow SSH
+-A INPUT -p tcp --dport 22 -j ACCEPT
+
+# Allow HTTPS
+-A INPUT -p tcp --dport 443 -j ACCEPT
+
+# Allow WireGuard UDP
+-A INPUT -p udp --dport {{ wireguard_port }} -j ACCEPT
+
+{% for profile in profiles %}
+# Forward for profile {{ profile.id }} (IPv6)
+{% for k, subnet in profile.wg_range_ipv6.items() %}
+-A FORWARD -s {{ subnet }} -j ACCEPT
+-A FORWARD -d {{ subnet }} -j ACCEPT
+{% endfor %}
+{% endfor %}
+
+COMMIT
+
+*nat
+:PREROUTING ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+
+{% for profile in profiles %}
+{% for k, subnet in profile.wg_range_ipv6.items() %}
+-A POSTROUTING -s {{ subnet }} -o {{ public_interface_name }} -j MASQUERADE
+{% endfor %}
+{% endfor %}
+
+COMMIT
