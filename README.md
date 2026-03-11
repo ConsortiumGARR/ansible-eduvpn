@@ -1,54 +1,79 @@
 # eduVPN – Single-Server All-in-One Deployment
 
-> Ansible playbook for automated deployment of **eduVPN v3** on a single Debian/Ubuntu server
+[![License: GPLv3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+![Contributions welcome](https://img.shields.io/badge/Contributions-Welcome-brightgreen.svg)
+
+**🚀 Automate your VPN deployment in minutes!**
+A powerful, production-ready Ansible playbook for deploying **eduVPN v3** on a single Debian or Ubuntu server.
+
+> [!WARNING]
+> **Disclaimer**
+>
+> Consortium GARR provides this code as-is to the community for sharing purposes but does not guarantee support, maintenance, or further development of the code. Use it at your own discretion.
 
 This repository contains an **Ansible playbook** for automated deployment of **eduVPN v3** on a **single Debian/Ubuntu server**, with the user portal (frontend) and VPN node (backend) co-located on the same host.
 
-**Key Features:**
-- Fully automated deployment with a single command
-- Configuration files ready with placeholder values to replace
-- WireGuard and OpenVPN support
-- Automatic Let's Encrypt certificates
-- LDAP, OIDC/SAML or local database authentication
-- Automatically configured iptables firewall
-- Production-ready
+## ✨ Key Features
+
+- ⚡ **Fully automated deployment** with a single command
+- 📝 **Configuration files ready** with placeholder values to replace
+- 🔒 **WireGuard and OpenVPN** support out-of-the-box
+- 📜 **Automatic Let's Encrypt** certificates
+- 🔐 **LDAP, OIDC/SAML or local database** authentication
+- 🛡️ **Automatically configured iptables** firewall
+- 🏢 **Production-ready** defaults
 
 **Official Reference**: [eduVPN Deployment Guide](https://docs.eduvpn.org/server/v3/deploy-debian.html)
 
-## Table of Contents
+## 📑 Table of Contents
 
-- [Architecture](#architecture)
-- [Requirements](#requirements)
-- [Quick Start](#quick-start)
-- [Detailed Installation Guide](#detailed-installation-guide)
-- [Variables Reference](#variables-reference)
-- [Maintenance Operations](#maintenance-operations)
-- [Troubleshooting](#troubleshooting)
-- [Useful Resources](#useful-resources)
+- [✨ Key Features](#-key-features)
+- [🏛️ Architecture](#%EF%B8%8F-architecture)
+- [📋 Requirements](#-requirements)
+- [🚀 Quick Start](#-quick-start)
+- [🛠️ Detailed Installation Guide](#%EF%B8%8F-detailed-installation-guide)
+- [📖 Variables Reference](#-variables-reference)
+- [🔧 Maintenance Operations](#-maintenance-operations)
+- [🐛 Troubleshooting](#-troubleshooting)
+- [📚 Useful Resources](#-useful-resources)
 
-## Architecture
+## 🏛️ Architecture
 
-```
- Internet
-    │
-    ▼
-┌─────────────────────────────────────────┐
-│  Single Server  (vpn.example.org)       │
-│                                              │
-│  ╔═══════════════════════════════════════╗   │
-│  ║  Apache (HTTPS :443)                  ║   │
-│  ║    └─ vpn-user-portal (PHP-FPM)       ║   │
-│  ║         ├─ Portal Frontend             ║   │
-│  ║         └─ node-api.php (localhost)    ║   │
-│  ╠═══════════════════════════════════════╣   │
-│  ║  vpn-server-node                       ║   │
-│  ║    ├─ vpn-daemon (:41194 internal)     ║   │
-│  ║    └─ WireGuard (:51820 public)        ║   │
-│  ╚═══════════════════════════════════════╝   │
-│                                                │
-│  Memcached :11211 (session storage)           │
-│  Let's Encrypt TLS certificate (automatic)     │
-└───────────────────────────────────────────────┘
+```mermaid
+graph TD
+    Internet-->|HTTPS :443| Apache
+    Internet-->|UDP :51820| WireGuard
+    
+    subgraph SingleServer["Single Server vpn.example.org"]
+        subgraph WebServer["Web Server"]
+            Apache["Apache: mod_auth_openidc"]
+            Portal["vpn-user-portal: PHP-FPM"]
+            Apache --> Portal
+        end
+        
+        subgraph VPNBackend["VPN Backend"]
+            Daemon["vpn-daemon: :41194 internal"]
+            WireGuard["WireGuard"]
+        end
+        
+        Portal -->|localhost API| Daemon
+        Daemon --> WireGuard
+        
+        Memcached[("Memcached: :11211 Session storage")]
+        Portal -.-> Memcached
+    end
+
+    
+    classDef server fill:#f9f9f9,stroke:#333,stroke-width:2px;
+    classDef proxy fill:#e1f5fe,stroke:#03a9f4,stroke-width:1px;
+    classDef app fill:#e8f5e9,stroke:#4caf50,stroke-width:1px;
+    classDef vpn fill:#fff3e0,stroke:#ff9800,stroke-width:1px;
+    classDef db fill:#f3e5f5,stroke:#9c27b0,stroke-width:1px;
+    
+    class Apache proxy;
+    class Portal app;
+    class Daemon,WireGuard vpn;
+    class Memcached db;
 ```
 
 ### Components
@@ -60,7 +85,7 @@ This repository contains an **Ansible playbook** for automated deployment of **e
 - **Memcached**: User session storage
 - **iptables**: Firewall with NAT/masquerade rules for VPN traffic
 
-## Requirements
+## 📋 Requirements
 
 ### Target Server
 
@@ -92,7 +117,7 @@ This repository contains an **Ansible playbook** for automated deployment of **e
 | 51820 | UDP      | WireGuard| VPN tunnel (can be modified) |
 | 1194  | UDP/TCP  | OpenVPN  | VPN tunnel (optional) |
 
-## Quick Start
+## 🚀 Quick Start
 
 ### Initial Setup (first time only)
 
@@ -130,7 +155,7 @@ This repository contains an **Ansible playbook** for automated deployment of **e
 
 ---
 
-## Detailed Installation Guide
+## 🛠️ Detailed Installation Guide
 
 ### Step 1: Control Machine Preparation
 
@@ -385,7 +410,7 @@ ansible-playbook playbook.yml --ask-vault-pass --tags wg
 
 ---
 
-## Variables Reference
+## 📖 Variables Reference
 
 ### General Variables (`group_vars/all/vars.yml`)
 
@@ -467,7 +492,7 @@ Profiles are defined in the `profiles` list, each with:
 
 ---
 
-## Maintenance Operations
+## 🔧 Maintenance Operations
 
 ### User Management (DbAuthModule)
 
@@ -552,7 +577,7 @@ vpn-user-portal-show-stats
 
 ---
 
-## Troubleshooting
+## 🐛 Troubleshooting
 
 ### Issue: Let's Encrypt certificate not obtained
 
@@ -686,7 +711,7 @@ vpn-maint-apply-changes
 
 ---
 
-## Repository Structure
+## 📁 Repository Structure
 
 ```
 ansible/
@@ -731,7 +756,7 @@ ansible/
 
 ---
 
-## What the Playbook Does
+## ⚙️ What the Playbook Does
 
 ### 1. System Packages Installation
 - `apache2`, `php-fpm`, `memcached`
@@ -767,6 +792,7 @@ ansible/
 - Restarts Apache with configured HTTPS
 
 ### 7. Apache Configuration
+
 - Deploy VirtualHost with TLS
 - Enable modules: `ssl`, `headers`, `rewrite`, `proxy_fcgi`, `proxy_http`
 - Configure php-fpm
@@ -784,9 +810,10 @@ ansible/
 
 ---
 
-## Useful Resources
+## 📚 Useful Resources
 
 ### Official eduVPN v3 Documentation
+
 - [Deploy Debian/Ubuntu](https://docs.eduvpn.org/server/v3/deploy-debian.html)
 - [Profile Configuration](https://docs.eduvpn.org/server/v3/profile-config.html)
 - [Authentication - LDAP](https://docs.eduvpn.org/server/v3/ldap.html)
@@ -798,6 +825,21 @@ ansible/
 - [Install Updates](https://docs.eduvpn.org/server/v3/install-updates.html)
 
 ### Repository
+
+- [Codeberg eduVPN Deploy](https://codeberg.org/eduVPN/deploy)
+
+---
+
+## ⚖️ License
+
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](LICENSE.md) file for details.
+
+## 🤝 Contributing and Further Development
+
+Contributions, further developments, error reports (and possibly fixes) are welcome.
+
+For more info, please read the [CONTRIBUTING](CONTRIBUTING.md) file.
+
 - [eduVPN Deploy Scripts](https://codeberg.org/eduVPN/deploy)
 - [eduVPN Documentation](https://codeberg.org/eduVPN/documentation)
 
