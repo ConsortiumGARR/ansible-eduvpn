@@ -1,20 +1,27 @@
-# Ansible Configuration for eduVPN
+# ⚙️ Ansible Configuration for eduVPN
 
-## Initial Setup
+## ✨ Initial Setup
 
-This folder contains configuration files for eduVPN deployment. 
+This folder contains configuration files for eduVPN deployment.
+
+> [!WARNING]
+> **Disclaimer**
+>
+> Consortium GARR provides this code as-is to the community for sharing purposes but does not guarantee support, maintenance, or further development of the code. Use it at your own discretion.
 
 **IMPORTANT**: Files already contain placeholder values. Replace them with your actual data before deployment.
 
 ### 1. Edit configuration files
 
 **`inventories/single/hosts.ini`** - Specify target server:
+
 ```ini
 [single]
 vpn.example.org ansible_user=ubuntu ansible_ssh_private_key_file=~/.ssh/id_rsa
 ```
 
 **`group_vars/all/vars.yml`** - Deployment variables:
+
 - `eduvpn_fqdn`: Your domain (e.g., `vpn.example.org`)
 - `server_ipv4`: Server's public IP
 - `public_interface_name`: Network interface (e.g., `eth0`, `ens3`)
@@ -50,10 +57,11 @@ You'll be prompted for a password - remember it for future deployments!
 ansible-playbook playbook.yml --ask-vault-pass
 ```
 
-## File Structure
+## 📁 File Structure
 
-```
+```text
 ansible/
+
 ├── playbook.yml                     # Main playbook
 ├── requirements.txt                 # Python dependencies
 ├── requirements.yml                 # Ansible collections
@@ -80,7 +88,7 @@ ansible/
     └── memcached/
 ```
 
-## Files NOT to Commit
+## 🚫 Files NOT to Commit
 
 The following files contain sensitive data and **MUST NOT be committed** to the repository:
 
@@ -90,7 +98,7 @@ The following files contain sensitive data and **MUST NOT be committed** to the 
 
 These files are already excluded by `.gitignore`.
 
-## Useful Scripts
+## 🛠️ Useful Scripts
 
 ### Encrypt/Decrypt vault
 
@@ -109,7 +117,7 @@ ansible-vault decrypt group_vars/all/vault.yml
 ansible-vault edit group_vars/all/vault.yml
 ```
 
-## Subsequent Deployments
+## 🚀 Subsequent Deployments
 
 After the initial deployment, you can update only specific components:
 
@@ -124,6 +132,14 @@ ansible-playbook playbook.yml --ask-vault-pass --tags iptables
 ansible-playbook playbook.yml --ask-vault-pass --tags wg
 ```
 
-## Support
+## 💬 Support
 
 For more information, see the [main README](../README.md) or the [official eduVPN documentation](https://docs.eduvpn.org/server/v3/).
+
+## ⚖️ License
+
+This project is licensed under the GNU General Public License v3.0. See the [LICENSE](../LICENSE.md) file for details.
+
+## 🤝 Contributing and Further Development
+
+For more info on how to contribute securely to this configuration, please read the [CONTRIBUTING](../CONTRIBUTING.md) file in the root directory.
